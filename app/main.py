@@ -81,9 +81,7 @@ def _app_id_from_token(token: str) -> str | None:
 def main() -> None:
     load_dotenv()
     cfg = config.load(CONFIG_PATH)
-    pipeline.apply_voice_preset(cfg["preset"])
-    pipeline.SETTINGS["speed"] = cfg["speed"]
-    pipeline.SETTINGS["n_semitones"] = cfg["n_semitones"]
+    pipeline.apply_config(cfg)
     pipeline.purge_outputs()
 
     from app import startup

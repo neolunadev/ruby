@@ -1,5 +1,17 @@
 # Changelog
 
+## 0.6.0 - 2026-11-03
+
+- Voice options: pick any of Kokoro's 29 female voices (grouped by accent), blend two
+  voices with a Mix slider, and choose from ten Miku presets (six new: bright, gentle,
+  calm, British, Japanese accent, steady).
+- Advanced section (collapsed by default) with Miku likeness, consonant protection
+  and loudness sliders. Sliders never reload a model; blends are cached.
+- Preview button: hear the current settings on your own speakers, not in the call.
+- Voice settings are saved to `config.json`; older configs keep their voice.
+- `scripts/preset_demo.py` renders a line in each preset with timings.
+- Design: `docs/designs/voice-options.md`; follow-ups: `docs/BACKLOG.md`.
+
 ## 0.5.0 — 2026-08-19
 
 - Quick phrases: one-click common lines, editable in Settings.

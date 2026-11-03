@@ -10,7 +10,7 @@ Related repos: [hq](https://github.com/neolunadev/hq) (the map of every project)
 
 ## What works today (v0.2.0)
 
-- **Desktop app** (`python -m app.main`): say box, global-hotkey overlay, system tray, message history with replay, GPU and latency readouts, settings for voice, speed, pitch, and devices.
+- **Desktop app** (`python -m app.main`): say box, global-hotkey overlay, system tray, message history with replay, GPU and latency readouts, 29 female base voices with two-voice blending, Miku presets with a quick Preview, speed and pitch, an Advanced section for the voice-conversion knobs, and device settings.
 - **Virtual microphone**: pick "CABLE Input" as the output and Discord sees Miku as your mic - works in DM calls, group calls, servers, and games. One-click VB-Cable install and a monitor output so you hear what you send.
 - **Discord, three ways**: a server bot (`/say`, `/join`, `/leave`, `/voice`, `/pitch`, `/speed`), plain DMs to the bot, and `/say` inside your own DM conversations after a one-click user install. All Discord input is limited to an allowlist of user IDs, with an optional visible transcript in the chat.
 - **Self-update**: the version chip checks this repo and installs updates only after you confirm.

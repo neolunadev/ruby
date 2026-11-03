@@ -28,9 +28,7 @@ async def _run() -> None:
         sys.exit(f"No voice model installed. Put a .pth and .index in {pipeline.MIKU_DIR}")
 
     cfg = config.load(Path(__file__).resolve().parent / "config.json")
-    pipeline.apply_voice_preset(cfg["preset"])
-    pipeline.SETTINGS["speed"] = cfg["speed"]
-    pipeline.SETTINGS["n_semitones"] = cfg["n_semitones"]
+    pipeline.apply_config(cfg)
     pipeline.purge_outputs()
 
     client: MikuClient | None = None
