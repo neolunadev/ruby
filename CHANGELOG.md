@@ -12,6 +12,12 @@
 - `scripts/preset_demo.py` renders a line in each preset with timings.
 - Design: `docs/designs/voice-options.md`; follow-ups: `docs/BACKLOG.md`.
 
+## 0.5.1 - 2026-11-03
+
+- Voice fidelity: Kokoro now gets the phoneme set it was trained on (misaki), not raw
+  espeak-ng output. Diphthongs were reaching it as two separate vowels, so "I'm" was
+  spoken as two syllables ("I am") and short lines could pick up a stray leading sound.
+
 ## 0.5.0 — 2026-08-19
 
 - Quick phrases: one-click common lines, editable in Settings.

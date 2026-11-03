@@ -8,7 +8,7 @@
 ## Next steps, in order
 
 0. Rebrand the project to Ruby (see the pending note at the top of `CLAUDE.md`). The repo is now `neolunadev/ruby`.
-1. Voice fidelity milestone: the spoken output adds or expands words ("I'm" is spoken "I am", "love you" is spoken "I love you"). Hypothesis, untested: Kokoro speaks the text it is given, so the change happens before Kokoro, in input transcription or a text rewrite step. Start with `superpowers:systematic-debugging` and trace the text from input to `engine/pipeline.py`.
+1. Voice fidelity milestone: fixed in 0.5.1 (`fix/voice-fidelity`). Cause: kokoro-onnx fed Kokoro raw espeak-ng phonemes, splitting diphthongs into two vowel tokens, so "I'm" was spoken "I am". The text itself was never changed on any input path. Remaining: confirm by ear on the GPU PC with `scripts\smoke_test.py`; if "love you" still gains a leading "I", it is a short-utterance onset sound from Kokoro or RVC, not a text change.
 2. Voice quality: RVC and Kokoro tuning.
 
 ## Gotchas

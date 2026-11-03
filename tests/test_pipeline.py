@@ -97,3 +97,51 @@ class TestPurgeOldOutputs:
 
     def test_missing_dir_is_noop(self, tmp_path):
         pipeline.purge_old_outputs(tmp_path / "nope", max_age_hours=24)
+
+
+class TestKokoroPhonemes:
+    """Kokoro v1.0 was trained on misaki phonemes, where each diphthong is one
+    token (I = aɪ, A = eɪ, O = oʊ, W = aʊ, Y = ɔɪ). kokoro-onnx feeds raw
+    espeak IPA instead, so "I'm" reaches the model as two vowels a + ɪ and is
+    spoken as two syllables ("I am")."""
+
+    class FakeKokoro:
+        def __init__(self):
+            self.calls = []
+
+        def create(self, text, **kwargs):
+            import numpy as np
+
+            self.calls.append((text, kwargs))
+            return np.zeros(240, dtype="float32"), 24000
+
+    def test_kokoro_gets_one_token_per_diphthong(self, monkeypatch, tmp_path):
+        fake = self.FakeKokoro()
+        monkeypatch.setattr(pipeline, "_get_kokoro", lambda: fake)
+        # espeak-ng's real output for "I'm tired" (en-us, stress, tie="^")
+        monkeypatch.setattr(pipeline, "_espeak", lambda text: "a^ɪm tˈa^ɪ^ɚd ", raising=False)
+        pipeline._kokoro_tts_blocking("I'm tired", tmp_path / "out.wav")
+        [(spoken, kwargs)] = fake.calls
+        assert kwargs.get("is_phonemes") is True
+        assert spoken == "Im tˈIəɹd"
+
+    def test_espeak_to_kokoro_maps_to_misaki_set(self):
+        cases = {
+            "a^ɪm tˈa^ɪ^ɚd ": "Im tˈIəɹd",               # I'm tired
+            "lˈʌv juː ": "lˈʌv ju",                      # love you
+            "ɡˌo^ʊ nˈa^ʊ, o^ʊkˈe^ɪ? d^ʒˈɔ^ɪ! ": "ɡˌO nˈW, OkˈA? ʤˈY!",
+            "bˈʌɾɚ t^ʃˈɜːt^ʃ d^ʒˈʌd^ʒ ": "bˈʌTəɹ ʧˈɜɹʧ ʤˈʌʤ",
+            "həlˈo^ʊ wˈɜːld. \nnˈuː lˈa^ɪn ": "həlˈO wˈɜɹld. nˈu lˈIn",
+        }
+        for espeak, kokoro in cases.items():
+            assert pipeline.espeak_to_kokoro(espeak) == kokoro, espeak
+
+    def test_real_espeak_sends_single_diphthong_tokens(self):
+        """Runs where kokoro-onnx is installed (Luke's PC), skipped in CI."""
+        import pytest
+
+        tokenizer_mod = pytest.importorskip("kokoro_onnx.tokenizer")
+        tokenizer = tokenizer_mod.Tokenizer()  # points phonemizer at espeak-ng
+        phonemes = pipeline.espeak_to_kokoro(pipeline._espeak("I'm tired"))
+        assert phonemes == "Im tˈIəɹd"
+        assert all(p in tokenizer.vocab for p in phonemes)

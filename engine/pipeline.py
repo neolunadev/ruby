@@ -19,6 +19,7 @@ import asyncio
 import functools
 import logging
 import os
+import re
 import time
 import uuid
 from pathlib import Path
@@ -92,7 +93,8 @@ def _kokoro_voice():
     """
     global _styles
     if _styles is None:
-        _styles = voices.StyleCache(_get_kokoro().get_voice_style)
+        # Looked up lazily: a single voice never needs the style arrays.
+        _styles = voices.StyleCache(lambda name: _get_kokoro().get_voice_style(name))
     return _styles.resolve(SETTINGS["voice"], SETTINGS.get("blend_voice"), SETTINGS.get("blend", 0.0))
 
 
@@ -186,11 +188,62 @@ def gpu_active() -> bool:
         return False
 
 
+# espeak-ng IPA -> the misaki phoneme set Kokoro v1.0 was trained on, from
+# misaki's EspeakFallback (hexgrad/misaki, Apache-2.0), US English. Without it
+# kokoro-onnx hands Kokoro raw espeak output, where a diphthong is two vowel
+# tokens: "I'm" (a + ɪ + m) comes out as two syllables, heard as "I am".
+_ESPEAK_TO_MISAKI = sorted({
+    "ʔˌn\u0329": "ʔn", "ʔn\u0329": "ʔn",
+    "a^ɪ": "I", "a^ʊ": "W",
+    "d^ʒ": "ʤ",
+    "e^ɪ": "A", "e": "A",
+    "t^ʃ": "ʧ",
+    "ɔ^ɪ": "Y",
+    "ə^l": "ᵊl",
+    "ʲo": "jo", "ʲə": "jə", "ʲ": "",
+    "ɚ": "əɹ",
+    "r": "ɹ",
+    "x": "k", "ç": "k",
+    "ɐ": "ə",
+    "ɬ": "l",
+    "\u0303": "",
+}.items(), key=lambda kv: -len(kv[0]))
+
+
+def espeak_to_kokoro(ps: str) -> str:
+    """Map espeak-ng phonemes (tie="^") to Kokoro v1.0's token set."""
+    ps = " ".join(ps.split())
+    for old, new in _ESPEAK_TO_MISAKI:
+        ps = ps.replace(old, new)
+    ps = re.sub(r"(\S)\u0329", r"ᵊ\1", ps).replace(chr(809), "")
+    ps = ps.replace("o^ʊ", "O").replace("ɜːɹ", "ɜɹ").replace("ɜː", "ɜɹ")
+    ps = ps.replace("ɪə", "iə").replace("ː", "").replace("o", "ɔ")
+    ps = ps.replace("ɾ", "T").replace("ʔ", "t")
+    return ps.replace("^", "")
+
+
+def _espeak(text: str) -> str:
+    """espeak-ng phonemes with diphthongs tied, as misaki reads them.
+
+    Call after _get_kokoro(): its Tokenizer points phonemizer at the bundled
+    espeak-ng library and data.
+    """
+    import phonemizer
+
+    return phonemizer.phonemize(
+        text.strip(), "en-us", preserve_punctuation=True, with_stress=True, tie="^"
+    )
+
+
 def _kokoro_tts_blocking(text: str, out_path: Path) -> None:
     import soundfile as sf
 
-    samples, sr = _get_kokoro().create(
-        text, voice=_kokoro_voice(), speed=SETTINGS["speed"]
+    kokoro = _get_kokoro()
+    samples, sr = kokoro.create(
+        espeak_to_kokoro(_espeak(text)),
+        voice=_kokoro_voice(),
+        speed=SETTINGS["speed"],
+        is_phonemes=True,
     )
     sf.write(str(out_path), samples, sr)
 
