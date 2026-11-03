@@ -51,8 +51,24 @@
     <div class="hint">When off, /say and DMs reply "Mic is off" and nothing is spoken.</div>
   </div>
   <div class="field">
-    <label for="preset">Voice</label>
-    <select id="preset"></select>
+    <label for="preset">Preset</label>
+    <div class="row">
+      <select id="preset"></select>
+      <button class="quiet" id="preview-btn" title="Hear a short line with the current settings, on your monitor device or speakers only">▶ Preview</button>
+    </div>
+  </div>
+  <div class="field">
+    <label for="voice">Voice</label>
+    <select id="voice"></select>
+    <div class="hint" id="voice-hint"></div>
+  </div>
+  <div class="field">
+    <label for="blend-voice">Mix with</label>
+    <select id="blend-voice"></select>
+  </div>
+  <div class="field" id="blend-field">
+    <label for="blend">Mix <span class="val" id="blend-val"></span></label>
+    <input type="range" id="blend" min="0" max="1" step="0.05">
   </div>
   <div class="field">
     <label for="speed">Speed <span class="val" id="speed-val"></span></label>
@@ -62,6 +78,27 @@
     <label for="pitch">Pitch <span class="val" id="pitch-val"></span> semitones</label>
     <input type="range" id="pitch" min="-12" max="12" step="1">
   </div>
+  <details class="advanced" id="advanced">
+    <summary>Advanced</summary>
+    <div class="field">
+      <label for="index-rate">Miku likeness <span class="val" id="index-rate-val"></span></label>
+      <input type="range" id="index-rate" data-key="index_rate" min="0" max="1" step="0.05">
+      <div class="hint">Higher sounds more like the Miku model, lower keeps more of the base voice and is a little clearer.</div>
+    </div>
+    <div class="field">
+      <label for="protect-rate">Consonant protection <span class="val" id="protect-rate-val"></span></label>
+      <input type="range" id="protect-rate" data-key="protect_rate" min="0" max="0.5" step="0.01">
+      <div class="hint">Keeps s, t and breath sounds crisp. 0.5 turns protection off.</div>
+    </div>
+    <div class="field">
+      <label for="rms-mix">Loudness <span class="val" id="rms-mix-val"></span></label>
+      <input type="range" id="rms-mix" data-key="rms_mix" min="0" max="1" step="0.05">
+      <div class="hint">Lower follows the base voice's loudness, which evens out volume. 1.0 is off and fastest.</div>
+    </div>
+    <div class="row">
+      <button class="quiet" id="reset-preset">Reset to preset</button>
+    </div>
+  </details>
 </section>
 
 <section class="panel" id="panel-history">

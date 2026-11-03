@@ -68,13 +68,14 @@ class TestApplyVoicePreset:
     def test_all_presets_are_miku_labelled(self):
         assert all(name.startswith("Miku") for name in pipeline.VOICE_PRESETS)
 
-    def test_preserves_speed_and_quality_settings(self):
+    def test_preserves_speed(self):
         saved = dict(pipeline.SETTINGS)
         try:
             pipeline.SETTINGS["speed"] = 1.25
             pipeline.apply_voice_preset("Miku (cloud backup 2)")
             assert pipeline.SETTINGS["speed"] == 1.25
-            assert pipeline.SETTINGS["index_rate"] == saved["index_rate"]
+            # presets fix every voice knob, so leftovers never leak in
+            assert pipeline.SETTINGS["index_rate"] == pipeline.VOICE_PRESETS["Miku (cloud backup 2)"]["index_rate"]
         finally:
             pipeline.SETTINGS.clear()
             pipeline.SETTINGS.update(saved)

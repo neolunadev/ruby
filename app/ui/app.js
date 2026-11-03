@@ -34,6 +34,8 @@ window.onEvent = (evt) => {
       $("wizard-download").textContent = "Retry download";
       toast(`Download failed: ${evt.error || "network error"}`);
     }
+  } else if (evt.type === "preview") {
+    previewDone(evt);
   } else if (evt.type === "update") {
     if (evt.status === "available" && !$("chip-version").classList.contains("update-available")) {
       $("chip-version").classList.add("update-available");
@@ -233,17 +235,124 @@ function renderCableHint(dev, currentDevice) {
   }
 }
 
+// ---------- voice options ----------
+// Display formatting per slider. Ranges come from the engine's schema so the
+// UI can never send a value the engine would reject.
+const SLIDERS = {
+  speed: { id: "speed", fmt: (v) => `${Number(v).toFixed(2)}×` },
+  n_semitones: { id: "pitch", fmt: (v) => (v >= 0 ? "+" : "") + v },
+  blend: { id: "blend", fmt: (v) => `${Math.round(v * 100)}%` },
+  index_rate: { id: "index-rate", fmt: (v) => Number(v).toFixed(2) },
+  protect_rate: { id: "protect-rate", fmt: (v) => Number(v).toFixed(2) },
+  rms_mix: { id: "rms-mix", fmt: (v) => Number(v).toFixed(2) },
+};
+let voiceCatalogue = [];
+
+function voiceOptions(selected, withNone) {
+  const out = [];
+  if (withNone) out.push(new Option("Nothing (one voice)", "", false, !selected));
+  const groups = new Map();
+  for (const v of voiceCatalogue) {
+    if (!groups.has(v.accent)) groups.set(v.accent, []);
+    groups.get(v.accent).push(v);
+  }
+  for (const [accent, list] of groups) {
+    const g = document.createElement("optgroup");
+    g.label = accent;
+    for (const v of list) g.append(new Option(v.label, v.id, false, v.id === selected));
+    out.push(g);
+  }
+  return out;
+}
+
+function renderVoiceHint(voiceId) {
+  const v = voiceCatalogue.find((x) => x.id === voiceId);
+  $("voice-hint").textContent = v ? `${v.accent} · ${v.character} · source quality ${v.grade}` : "Cloud voice from the preset. Pick a voice here to go back to the local engine.";
+}
+
+function renderBlendEnabled(s) {
+  const off = s.engine !== "kokoro" || !s.blend_voice;
+  $("blend").disabled = off;
+  $("blend-voice").disabled = s.engine !== "kokoro";
+}
+
+function renderPresetMatch(state) {
+  const s = state.settings;
+  const opts = state.presets.map((p) => new Option(p, p, false, p === state.preset_match));
+  if (!state.preset_match) {
+    const custom = new Option("Custom", "", true, true);
+    custom.disabled = true;
+    opts.unshift(custom);
+  }
+  $("preset").replaceChildren(...opts);
+  $("reset-preset").disabled = !!state.preset_match || !state.presets.includes(s.preset);
+  $("reset-preset").title = `Back to ${s.preset}`;
+}
+
+function renderVoice(state) {
+  const s = state.settings;
+  voiceCatalogue = state.voices || [];
+  renderPresetMatch(state);
+  const voiceOpts = voiceOptions(s.voice, false);
+  if (s.engine !== "kokoro") {
+    const cloud = new Option(`Cloud voice (${s.voice})`, "", true, true);
+    cloud.disabled = true;
+    voiceOpts.unshift(cloud);
+  }
+  $("voice").replaceChildren(...voiceOpts);
+  $("blend-voice").replaceChildren(...voiceOptions(s.blend_voice, true));
+  renderVoiceHint(s.engine === "kokoro" ? s.voice : null);
+  for (const [key, sl] of Object.entries(SLIDERS)) {
+    const el = $(sl.id);
+    const spec = state.schema?.[key];
+    if (spec) Object.assign(el, { min: spec.min, max: spec.max, step: spec.step });
+    el.value = s[key];
+    $(sl.id + "-val").textContent = sl.fmt(Number(s[key]));
+  }
+  renderBlendEnabled(s);
+}
+
+async function refreshVoice() {
+  renderVoice(await pywebview.api.get_state());
+}
+
+// Every voice control saves on release; nothing reloads a model, so the next
+// message (or Preview) simply uses the new numbers.
+for (const [key, sl] of Object.entries(SLIDERS)) {
+  const el = $(sl.id);
+  el.oninput = () => { $(sl.id + "-val").textContent = sl.fmt(Number(el.value)); };
+  el.onchange = async () => { await setSetting(key, Number(el.value)); refreshVoice(); };
+}
+
+$("preset").onchange = async (e) => { if (e.target.value) await setSetting("preset", e.target.value); refreshVoice(); };
+$("voice").onchange = async (e) => { if (e.target.value) await setSetting("voice", e.target.value); refreshVoice(); };
+$("blend-voice").onchange = async (e) => { await setSetting("blend_voice", e.target.value || null); refreshVoice(); };
+$("reset-preset").onclick = async () => {
+  const state = await pywebview.api.get_state();
+  await setSetting("preset", state.settings.preset);
+  refreshVoice();
+};
+$("preview-btn").onclick = async () => {
+  const res = await pywebview.api.preview();
+  if (!res.ok) return toast(res.error);
+  $("preview-btn").disabled = true;
+  $("preview-btn").textContent = "Speaking…";
+};
+
+function previewDone(evt) {
+  $("preview-btn").disabled = false;
+  $("preview-btn").textContent = "▶ Preview";
+  if (evt.status === "failed") toast(`Preview failed: ${evt.error || "unknown error"}`);
+  else showLatency(evt.timing);
+}
+
 // ---------- init ----------
 async function init() {
   const state = await pywebview.api.get_state();
   setLed(state.state);
 
   const s = state.settings;
-  $("preset").replaceChildren(...state.presets.map((p) => new Option(p, p, false, p === s.preset)));
-  $("speed").value = s.speed;
-  $("speed-val").textContent = `${Number(s.speed).toFixed(2)}×`;
-  $("pitch").value = s.n_semitones;
-  $("pitch-val").textContent = (s.n_semitones >= 0 ? "+" : "") + s.n_semitones;
+  renderVoice(state);
   $("hotkey").value = s.hotkey;
   setModeUI(s.mode);
   $("allowed-ids").value = (s.allowed_dm_users || []).join(", ");
@@ -347,11 +456,6 @@ $("chip-version").onclick = async () => {
 $("say-btn").onclick = say;
 $("say-input").addEventListener("keydown", (e) => { if (e.key === "Enter") say(); });
 
-$("preset").onchange = (e) => setSetting("preset", e.target.value).then((ok) => { if (ok) init(); });
-$("speed").oninput = (e) => { $("speed-val").textContent = `${Number(e.target.value).toFixed(2)}×`; };
-$("speed").onchange = (e) => setSetting("speed", Number(e.target.value));
-$("pitch").oninput = (e) => { const v = Number(e.target.value); $("pitch-val").textContent = (v >= 0 ? "+" : "") + v; };
-$("pitch").onchange = (e) => setSetting("n_semitones", Number(e.target.value));
 $("device").onchange = (e) => setSetting("device", e.target.value === "" ? null : Number(e.target.value));
 $("monitor").onchange = (e) => setSetting("monitor_device", e.target.value === "" ? null : Number(e.target.value));
 $("test-tone").onclick = () => pywebview.api.test_tone();

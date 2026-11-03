@@ -1,15 +1,19 @@
 """pywebview js_api: the GUI's only door into the engine."""
 
+import asyncio
 import json
 import logging
 import threading
 
 from app import telemetry
 from app.history import History
-from engine import pipeline, playback
+from engine import pipeline, playback, voices
 
 log = logging.getLogger(__name__)
 
+
+PREVIEW_TEXT = "Hi! This is how I sound right now."
+NUMERIC_VOICE_KEYS = ("speed", "n_semitones", "blend", "index_rate", "protect_rate", "rms_mix")
 
 MAX_PHRASES = 12
 MAX_PHRASE_LEN = 100
@@ -38,6 +42,7 @@ class JsApi:
         self.discord_client = None  # set by main.py when a token is configured
         self.discord_status = "no token configured"
         self.discord_links: dict = {}
+        self._previewing = False
 
     # ---- pushes -------------------------------------------------------
     def push(self, evt: dict) -> None:
@@ -106,6 +111,9 @@ class JsApi:
             "state": self.state,
             "settings": dict(self._cfg),
             "presets": list(pipeline.VOICE_PRESETS),
+            "preset_match": voices.matching_preset(self._cfg),
+            "voices": voices.catalogue(),
+            "schema": voices.schema(),
             "last_timing": dict(pipeline.LAST_TIMING),
             "discord": {"status": self.discord_status, **self.discord_links},
             "version": self._version(),
@@ -122,11 +130,26 @@ class JsApi:
             if value not in pipeline.VOICE_PRESETS:
                 return {"ok": False, "error": f"Unknown voice {value!r}."}
             pipeline.apply_voice_preset(value)
-            self._cfg["n_semitones"] = pipeline.SETTINGS["n_semitones"]
-        elif key == "speed":
-            pipeline.SETTINGS["speed"] = float(value)
-        elif key == "n_semitones":
-            pipeline.SETTINGS["n_semitones"] = int(value)
+            self._cfg.update(pipeline.VOICE_PRESETS[value])
+        elif key in NUMERIC_VOICE_KEYS:
+            # Sliders only change numbers the next synthesis reads; no model
+            # is reloaded (Kokoro, its packs and the RVC model stay resident).
+            try:
+                value = voices.clamp(key, value)
+            except (TypeError, ValueError):
+                return {"ok": False, "error": f"{key} needs a number."}
+            pipeline.SETTINGS[key] = value
+        elif key == "voice":
+            if not voices.is_female_voice(value):
+                return {"ok": False, "error": f"Unknown voice {value!r}."}
+            # Picking a catalogue voice always means the local engine.
+            pipeline.SETTINGS.update(engine="kokoro", voice=value)
+            self._cfg["engine"] = "kokoro"
+        elif key == "blend_voice":
+            value = value or None
+            if value is not None and not voices.is_female_voice(value):
+                return {"ok": False, "error": f"Unknown voice {value!r}."}
+            pipeline.SETTINGS["blend_voice"] = value
         elif key == "device":
             idx = None if value is None else int(value)
             self._player.device = idx
@@ -186,6 +209,40 @@ class JsApi:
             target=playback.test_tone, args=(self._player.device,), daemon=True
         ).start()
         return {"ok": True}
+
+    def preview(self) -> dict:
+        """Speak a short fixed line with the current settings, to the user only.
+
+        Plays on the monitor device, or the system default output when no
+        monitor is set, never into the virtual mic or a voice channel, and
+        stays out of the history.
+        """
+        if self._previewing:
+            return {"ok": False, "error": "A preview is already playing."}
+        self._previewing = True
+
+        async def job():
+            try:
+                wav = await pipeline.synthesize(PREVIEW_TEXT)
+                try:
+                    await asyncio.to_thread(self._play_preview, wav)
+                finally:
+                    wav.unlink(missing_ok=True)
+                self.push({"type": "preview", "status": "done", "timing": dict(pipeline.LAST_TIMING)})
+            except Exception as exc:
+                log.exception("preview failed")
+                self.push({"type": "preview", "status": "failed", "error": str(exc)})
+            finally:
+                self._previewing = False
+
+        self._loop.submit(job())
+        return {"ok": True}
+
+    def _play_preview(self, wav) -> None:
+        import soundfile as sf
+
+        data, sr = sf.read(str(wav), dtype="float32")
+        playback.AudioPlayer._play_to(self._player.monitor_device, data, sr)
 
     def get_history(self) -> dict:
         return {"ok": True, "items": self.history.items()}

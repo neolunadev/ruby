@@ -172,6 +172,32 @@ select:focus, input[type="text"]:focus { outline: none; border-color: var(--teal
 select:hover, input[type="text"]:hover { border-color: var(--teal-dim); }
 
 input[type="range"] { width: 100%; accent-color: var(--teal); }
+input[type="range"]:disabled { opacity: 0.4; }
+select:disabled { opacity: 0.5; }
+
+/* ---------- advanced (collapsed by default) ---------- */
+details.advanced {
+  border: 1px solid var(--panel-2);
+  border-radius: 6px;
+  padding: 0 10px;
+  margin-bottom: 14px;
+}
+details.advanced[open] { padding-bottom: 10px; }
+details.advanced summary {
+  font: 600 10px var(--mono);
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--muted);
+  padding: 9px 0;
+  cursor: pointer;
+  list-style: none;
+}
+details.advanced summary::-webkit-details-marker { display: none; }
+details.advanced summary::before { content: "▸ "; color: var(--teal-dim); }
+details.advanced[open] summary::before { content: "▾ "; color: var(--teal); }
+details.advanced summary:hover { color: var(--text); }
+details.advanced .row > button { padding: 6px 14px; }
+button:disabled { opacity: 0.45; cursor: default; }
 
 .row { display: flex; gap: 8px; }
 .row > * { flex: 1; }

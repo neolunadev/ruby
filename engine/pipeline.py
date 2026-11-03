@@ -24,6 +24,8 @@ import time
 import uuid
 from pathlib import Path
 
+from engine import voices
+
 BASE_DIR = Path(__file__).resolve().parents[1]
 VOICE_MODELS_DIR = BASE_DIR / "models" / "voice_models"
 MIKU_DIR = VOICE_MODELS_DIR / "Miku"
@@ -34,34 +36,25 @@ MAX_TEXT_LEN = 500
 
 log = logging.getLogger(__name__)
 
-# Mutated at runtime by the /voice, /pitch and /speed commands.
+# Mutated at runtime by the app's sliders and the /voice, /pitch and /speed
+# commands. Ranges, defaults and costs: engine/voices.py and
+# docs/designs/voice-options.md.
 SETTINGS = {
     "model_name": "Miku",
-    "engine": "kokoro",
-    "voice": "af_heart",
-    "speed": 1.1,
+    "speed": voices.SCHEMA["speed"]["default"],
     "edge_pitch": "+20Hz",  # edge engine only; kokoro register comes from n_semitones
-    "n_semitones": 10,      # RVC transpose up to Miku's register
-    "index_rate": 0.5,
-    "protect_rate": 0.33,
+    **voices.VOICE_DEFAULTS,  # engine, voice, blend, transpose and the RVC knobs
 }
 
-# Every preset is Miku — the entries differ only in the hidden base voice that
-# feeds the Miku RVC model (flavors prosody) and the transpose that lands it in
-# her register. The cloud backups keep the voice available if the local
-# engine ever breaks; they need internet and are ~1s slower.
-VOICE_PRESETS = {
-    "Miku": {"engine": "kokoro", "voice": "af_heart", "n_semitones": 10},
-    "Miku (soft)": {"engine": "kokoro", "voice": "af_bella", "n_semitones": 10},
-    "Miku (cloud backup)": {"engine": "edge", "voice": "en-US-AnaNeural", "n_semitones": 2},
-    "Miku (cloud backup 2)": {"engine": "edge", "voice": "en-US-JennyNeural", "n_semitones": 6},
-}
+# Every preset is Miku; see engine/voices.py for what each one changes.
+VOICE_PRESETS = voices.PRESETS
 
 # One GPU job at a time; discord.py's event loop stays free via to_thread.
 _gpu_lock = asyncio.Lock()
 
 _converter = None
 _kokoro = None
+_styles = None  # voices.StyleCache over the loaded Kokoro's packs
 
 # Timing split of the most recent synthesize() call, for the app's telemetry.
 LAST_TIMING: dict = {}
@@ -82,8 +75,27 @@ def edge_rate(speed: float) -> str:
 
 
 def apply_voice_preset(name: str) -> None:
-    """Switch base voice, engine and matching transpose; other settings persist."""
+    """Switch to a preset's voice and RVC knobs; speed persists."""
     SETTINGS.update(VOICE_PRESETS[name])
+
+
+def apply_config(cfg: dict) -> None:
+    """Load the saved voice settings (app config.json) into SETTINGS."""
+    SETTINGS.update(voices.voice_fields(cfg))
+    SETTINGS["speed"] = voices.clamp("speed", cfg.get("speed", SETTINGS["speed"]))
+
+
+def _kokoro_voice():
+    """The voice argument for kokoro.create: a pack name, or a cached blend.
+
+    Only the style vector changes between slider moves; the ONNX session and
+    the voice packs stay loaded.
+    """
+    global _styles
+    if _styles is None:
+        # Looked up lazily: a single voice never needs the style arrays.
+        _styles = voices.StyleCache(lambda name: _get_kokoro().get_voice_style(name))
+    return _styles.resolve(SETTINGS["voice"], SETTINGS.get("blend_voice"), SETTINGS.get("blend", 0.0))
 
 
 def model_available(model_dir: Path = MIKU_DIR) -> bool:
@@ -229,7 +241,7 @@ def _kokoro_tts_blocking(text: str, out_path: Path) -> None:
     kokoro = _get_kokoro()
     samples, sr = kokoro.create(
         espeak_to_kokoro(_espeak(text)),
-        voice=SETTINGS["voice"],
+        voice=_kokoro_voice(),
         speed=SETTINGS["speed"],
         is_phonemes=True,
     )
@@ -275,7 +287,7 @@ def _convert_blocking(tts_path: Path, out_path: Path) -> None:
         pitch=SETTINGS["n_semitones"],
         f0_method="rmvpe",
         index_rate=SETTINGS["index_rate"],
-        volume_envelope=1.0,
+        volume_envelope=SETTINGS["rms_mix"],
         protect=SETTINGS["protect_rate"],
         export_format="WAV",
     )
