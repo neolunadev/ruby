@@ -62,6 +62,12 @@ text says only "accessibility tool"; no personal details about users.
    Ti). Deployment target is an RTX 2070 running games concurrently - keep VRAM
    around 1GB and GPU bursts short.
 
+6. Kokoro v1.0 speaks misaki phonemes, not espeak IPA. kokoro-onnx phonemizes
+   with raw espeak-ng, which splits diphthongs (aɪ, eɪ, oʊ...) into two vowel
+   tokens and makes "I'm" sound like "I am". `pipeline._kokoro_tts_blocking`
+   phonemizes itself (`_espeak`, tie="^"), maps with `espeak_to_kokoro` and calls
+   `create(..., is_phonemes=True)`. Keep it that way.
+
 ## Conventions
 
 - TDD for pure logic (test_*.py at repo root); integration is verified by
