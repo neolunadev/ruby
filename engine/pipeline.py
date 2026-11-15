@@ -235,46 +235,12 @@ def _espeak(text: str) -> str:
     )
 
 
-# Laugh words espeak gets wrong: "haha" stresses the second "ha", and "hihi"
-# ends in the word "high". Repeated ha/hi/he/ho syllables get hand-set
-# phonemes instead (every beat stressed); "hi" alone stays a greeting.
-_LAUGH_RE = re.compile(r"\b((?:ha)+h?|(?:hi){2,}|(?:he){2,}|(?:ho){2,})\b", re.IGNORECASE)
-_LAUGH_VOWEL = {"a": "ɑ", "i": "i", "e": "i", "o": "O"}
-
-
-def laugh_phonemes(word: str) -> str:
-    """'hahaha' -> 'hˈɑ hˈɑ hˈɑ', 'hihi' -> 'hˈi hˈi' (Kokoro tokens).
-
-    Each beat is its own stressed syllable, the way English says "ha ha" and
-    "hee hee". Run together unstressed ('hˈɑhɑ') it sounded Japanese.
-    """
-    syllables = re.findall(r"h([aieo])", word.lower())
-    return " ".join("hˈ" + _LAUGH_VOWEL[v] for v in syllables)
-
-
-def text_to_phonemes(text: str, espeak=None) -> str:
-    """Kokoro phonemes for a line. A line with no laugh word takes exactly the
-    old single-espeak path, so ordinary speech (e.g. "yeah") is unchanged."""
-    espeak = espeak or _espeak
-    if not _LAUGH_RE.search(text):
-        return espeak_to_kokoro(espeak(text))
-    out = []
-    for i, part in enumerate(_LAUGH_RE.split(text)):
-        if i % 2:
-            out.append(laugh_phonemes(part))
-        elif re.search(r"\w", part):
-            out.append(espeak_to_kokoro(espeak(part)))
-        elif part.strip():
-            out.append(part.strip())  # bare punctuation between laughs
-    return " ".join(out)
-
-
 def _kokoro_tts_blocking(text: str, out_path: Path) -> None:
     import soundfile as sf
 
     kokoro = _get_kokoro()
     samples, sr = kokoro.create(
-        text_to_phonemes(text),
+        espeak_to_kokoro(_espeak(text)),
         voice=_kokoro_voice(),
         speed=SETTINGS["speed"],
         is_phonemes=True,

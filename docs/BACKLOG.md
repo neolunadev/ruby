@@ -19,10 +19,13 @@ message into sentences, so they get one spec (EGM) before code.
 - **Drawn-out syllables.** "i think you liiiiike meeeee" should hold the vowel, not
   spell or skip it. Likely route: collapse the run to the dictionary word, phonemize,
   then repeat or stretch the stressed vowel.
-- **Laughs and interjections.** 0.7.0 fixes the phonemes ("haha" stressed on the
-  wrong "ha", "hihi" ending in "high"). If laughs still sound flat by ear, try
-  breathier phonemes or short recorded-style takes. Must not change how "yeah"
-  sounds now (Luke likes it).
+- **Laughs and short words (slow speed).** At speed 0.75 Kokoro adds made-up
+  syllables around very short inputs ("no" transcribes as "In and out", "haha" as
+  "Am I high?"); at 1.0 the same inputs come out clean. Found with Whisper on Kokoro's
+  raw output (hypothesis: Whisper is noisy on one-second clips). The 0.7.0 hand-set
+  laugh phonemes made it worse and were removed in 0.7.1. Candidates: render short
+  lines at 1.0 and slow them with Rubber Band afterwards, or respell laughs ("hee
+  hee!"). Must not change how "yeah" sounds (Luke likes it).
 - **Misspellings and jokes.** "cummunity" comes out like "community": espeak does
   give it a different first vowel (kʌm, not kəm), but the syllable is unstressed so
   the difference blurs. Options: a user pronunciation list in Settings ("write it as /
