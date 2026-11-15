@@ -163,19 +163,19 @@ class TestLaughs:
         assert pipeline.text_to_phonemes("yeah", espeak=spy) == "jˈɛh"
         assert calls == ["yeah"]
 
-    def test_haha_stresses_first_syllable(self):
-        assert pipeline.laugh_phonemes("haha") == "hˈɑhɑ"
-        assert pipeline.laugh_phonemes("HAHAHA") == "hˈɑhɑhɑ"
+    def test_haha_stresses_every_beat(self):
+        assert pipeline.laugh_phonemes("haha") == "hˈɑ hˈɑ"
+        assert pipeline.laugh_phonemes("HAHAHA") == "hˈɑ hˈɑ hˈɑ"
 
     def test_hihi_is_hee_hee_not_high(self):
-        assert pipeline.laugh_phonemes("hihi") == "hˈihi"
+        assert pipeline.laugh_phonemes("hihi") == "hˈi hˈi"
 
     def test_hi_alone_is_still_a_greeting(self):
         assert pipeline.text_to_phonemes("hi there", espeak=self.fake_espeak) == "<8>"
 
     def test_laugh_inside_a_sentence(self):
         out = pipeline.text_to_phonemes("ok haha, sure", espeak=self.fake_espeak)
-        assert out == "<2> hˈɑhɑ <6>"
+        assert out == "<2> hˈɑ hˈɑ <6>"
 
     def test_words_containing_ha_are_untouched(self):
         assert pipeline.text_to_phonemes("that hat", espeak=self.fake_espeak) == "<8>"

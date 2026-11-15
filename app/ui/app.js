@@ -268,10 +268,19 @@ const SLIDERS = {
   n_semitones: { id: "pitch", fmt: (v) => (v >= 0 ? "+" : "") + v },
   blend: { id: "blend", fmt: (v) => `${Math.round(v * 100)}%` },
   index_rate: { id: "index-rate", fmt: (v) => Number(v).toFixed(2) },
-  protect_rate: { id: "protect-rate", fmt: (v) => Number(v).toFixed(2) },
+  // The engine's protect_rate is backwards for people: 0.5 means protection
+  // off. The slider shows it flipped (right = more protection) as a percent;
+  // saved values and the sound they make are unchanged.
+  protect_rate: { id: "protect-rate", invert: true, fmt: (v) => `${Math.round((1 - v / 0.5) * 100)}%` },
   rms_mix: { id: "rms-mix", fmt: (v) => Number(v).toFixed(2) },
 };
 let voiceCatalogue = [];
+
+// Slider position <-> engine value; an inverted slider mirrors its range.
+function toSlider(sl, el, v) {
+  return sl.invert ? Number(el.min) + Number(el.max) - Number(v) : Number(v);
+}
+const fromSlider = toSlider;  // mirroring is its own inverse
 
 function voiceOptions(selected, withNone) {
   const out = [];
@@ -331,7 +340,7 @@ function renderVoice(state) {
     const el = $(sl.id);
     const spec = state.schema?.[key];
     if (spec) Object.assign(el, { min: spec.min, max: spec.max, step: spec.step });
-    el.value = s[key];
+    el.value = toSlider(sl, el, s[key]);
     $(sl.id + "-val").textContent = sl.fmt(Number(s[key]));
   }
   renderBlendEnabled(s);
@@ -345,8 +354,12 @@ async function refreshVoice() {
 // message (or Preview) simply uses the new numbers.
 for (const [key, sl] of Object.entries(SLIDERS)) {
   const el = $(sl.id);
-  el.oninput = () => { $(sl.id + "-val").textContent = sl.fmt(Number(el.value)); };
-  el.onchange = async () => { await setSetting(key, Number(el.value)); refreshVoice(); };
+  el.oninput = () => { $(sl.id + "-val").textContent = sl.fmt(fromSlider(sl, el, el.value)); };
+  el.onchange = async () => {
+    // Round away float noise from mirroring (0.5 - 0.17 = 0.32999...).
+    await setSetting(key, Math.round(fromSlider(sl, el, el.value) * 1000) / 1000);
+    refreshVoice();
+  };
 }
 
 $("preset").onchange = async (e) => { if (e.target.value) await setSetting("preset", e.target.value); refreshVoice(); };
