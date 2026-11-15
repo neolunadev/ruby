@@ -16,6 +16,9 @@ jobs:
     with:
       markdownlint: false
       allow-data: false
+      # Public repo: GitHub-hosted minutes are free, and the org's self-hosted
+      # runners refuse public repos (see house.yml).
+      runner: '"ubuntu-latest"'
 
   test:
     runs-on: windows-latest
