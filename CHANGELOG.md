@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.7.1 - 2026-11-15
+
+- Laughs are back to exactly how 0.6.0 said them. The 0.7.0 laugh change made
+  "hihi" come out as other words; a better fix waits for a listening pass.
+
 ## 0.7.0 - 2026-11-15
 
 - Boost mode: the 💥 Boost button beside Speak boosts the next line only (a touch
