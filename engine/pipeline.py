@@ -237,17 +237,19 @@ def _espeak(text: str) -> str:
 
 # Laugh words espeak gets wrong: "haha" stresses the second "ha", and "hihi"
 # ends in the word "high". Repeated ha/hi/he/ho syllables get hand-set
-# phonemes instead (first syllable stressed); "hi" alone stays a greeting.
+# phonemes instead (every beat stressed); "hi" alone stays a greeting.
 _LAUGH_RE = re.compile(r"\b((?:ha)+h?|(?:hi){2,}|(?:he){2,}|(?:ho){2,})\b", re.IGNORECASE)
 _LAUGH_VOWEL = {"a": "ɑ", "i": "i", "e": "i", "o": "O"}
 
 
 def laugh_phonemes(word: str) -> str:
-    """'hahaha' -> 'hˈɑhɑhɑ', 'hihi' -> 'hˈihi' (Kokoro tokens)."""
+    """'hahaha' -> 'hˈɑ hˈɑ hˈɑ', 'hihi' -> 'hˈi hˈi' (Kokoro tokens).
+
+    Each beat is its own stressed syllable, the way English says "ha ha" and
+    "hee hee". Run together unstressed ('hˈɑhɑ') it sounded Japanese.
+    """
     syllables = re.findall(r"h([aieo])", word.lower())
-    parts = ["h" + _LAUGH_VOWEL[v] for v in syllables]
-    parts[0] = "hˈ" + parts[0][1:]
-    return "".join(parts)
+    return " ".join("hˈ" + _LAUGH_VOWEL[v] for v in syllables)
 
 
 def text_to_phonemes(text: str, espeak=None) -> str:
