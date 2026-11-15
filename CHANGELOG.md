@@ -2,8 +2,9 @@
 
 ## 0.7.0 - 2026-11-15
 
-- Boost mode: the 💥 Boost button beside Speak boosts the next line only (bass boost,
-  blown-out mic clipping, big echo and reverb), then switches itself off. Ctrl+Enter
+- Boost mode: the 💥 Boost button beside Speak boosts the next line only (a touch
+  lower, bass boosted, crunchy like a clipping mic without really clipping, big echo
+  and reverb), then switches itself off. Ctrl+Enter
   speaks a line boosted, in the main box and the overlay. Boosted lines show 💥 in
   History and replay boosted.
 - Updates now come only from full GitHub releases (never the main branch or a

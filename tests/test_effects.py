@@ -15,8 +15,9 @@ class TestBoost:
     def test_louder_and_within_ceiling(self):
         dry = _tone()
         wet = effects.boost(dry, SR)
-        assert np.sqrt(np.mean(wet**2)) > 2 * np.sqrt(np.mean(dry**2))
-        assert np.max(np.abs(wet)) <= effects.BOOST_CEILING + 1e-6
+        words = wet[: len(dry)]
+        assert np.sqrt(np.mean(words**2)) > 1.5 * np.sqrt(np.mean(dry**2))
+        assert np.max(np.abs(wet)) <= effects.BOOST_PEAK + 1e-6  # sounds clipped, never clips
 
     def test_keeps_an_echo_tail(self):
         dry = _tone()
