@@ -235,15 +235,34 @@ def _espeak(text: str) -> str:
     )
 
 
+# Lines this short go through kokoro-onnx's own phonemizer instead of the misaki
+# mapping. The mapping collapses diphthongs and drops vowel length, which keeps
+# "I'm" one syllable in sentences but garbles lone short words: "no", "haha"
+# and "hihi" came out as other words (Luke's ear check, 0.7.1). "cats" and
+# "yeah" give identical tokens either way, so they are unchanged.
+SHORT_LINE_WORDS = 2
+
+
+def use_kokoro_phonemizer(text: str) -> bool:
+    """True for one- or two-word lines without a contraction ("I'm" keeps the
+    misaki mapping, the reason it exists)."""
+    return len(text.split()) <= SHORT_LINE_WORDS and not re.search(r"['’]", text)
+
+
 def _kokoro_tts_blocking(text: str, out_path: Path) -> None:
     import soundfile as sf
 
     kokoro = _get_kokoro()
+    if use_kokoro_phonemizer(text):
+        tokens, is_phonemes = text.strip(), False
+    else:
+        tokens, is_phonemes = espeak_to_kokoro(_espeak(text)), True
     samples, sr = kokoro.create(
-        espeak_to_kokoro(_espeak(text)),
+        tokens,
         voice=_kokoro_voice(),
         speed=SETTINGS["speed"],
-        is_phonemes=True,
+        lang="en-us",
+        is_phonemes=is_phonemes,
     )
     sf.write(str(out_path), samples, sr)
 

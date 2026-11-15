@@ -19,13 +19,14 @@ message into sentences, so they get one spec (EGM) before code.
 - **Drawn-out syllables.** "i think you liiiiike meeeee" should hold the vowel, not
   spell or skip it. Likely route: collapse the run to the dictionary word, phonemize,
   then repeat or stretch the stressed vowel.
-- **Laughs and short words (slow speed).** At speed 0.75 Kokoro adds made-up
-  syllables around very short inputs ("no" transcribes as "In and out", "haha" as
-  "Am I high?"); at 1.0 the same inputs come out clean. Found with Whisper on Kokoro's
-  raw output (hypothesis: Whisper is noisy on one-second clips). The 0.7.0 hand-set
-  laugh phonemes made it worse and were removed in 0.7.1. Candidates: render short
-  lines at 1.0 and slow them with Rubber Band afterwards, or respell laughs ("hee
-  hee!"). Must not change how "yeah" sounds (Luke likes it).
+- **Short words, follow-ups.** 0.7.2 routes one- and two-word lines through
+  kokoro-onnx's own phonemizer (Luke's ear check: the 0.5.1 misaki mapping garbled
+  "no", "haha", "hihi"; Kokoro's own path is clear). Left: "no" leans a little
+  towards "now"; check whether three- and four-word lines need the same routing;
+  Kokoro's official misaki G2P would be the proper fix but its spaCy dependency does
+  not build on Python 3.13.
+- **Cloud backup voice is down.** edge-tts 7.2.8 gets HTTP 403 from Microsoft, so
+  the "Miku (cloud backup)" preset fails. Try edge-tts 7.3.1.
 - **Misspellings and jokes.** "cummunity" comes out like "community": espeak does
   give it a different first vowel (kʌm, not kəm), but the syllable is unstressed so
   the difference blurs. Options: a user pronunciation list in Settings ("write it as /

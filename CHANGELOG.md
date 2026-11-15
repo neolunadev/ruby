@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.7.2 - 2026-11-15
+
+- Short lines are clear again: one- and two-word lines ("no", "haha", "hihi", "hee
+  hee") use Kokoro's own pronunciation instead of the 0.5.1 mapping, which garbled
+  them into other words. Longer lines and anything with a contraction ("I'm") keep
+  the 0.5.1 fix. "yeah" and "cats" sound exactly as before.
+
 ## 0.7.1 - 2026-11-15
 
 - Laughs are back to exactly how 0.6.0 said them. The 0.7.0 laugh change made
