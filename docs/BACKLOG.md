@@ -30,6 +30,18 @@ message into sentences, so they get one spec (EGM) before code.
 - **Sing mode.** RVC already has `f0_autotune` (see the Autotune toggle below);
   singing needs a melody: snap to a scale for an autotune feel, or take a simple
   note line. Needs a design pass.
+- **Japanese text.** Lines with Japanese characters (日本語) should be spoken in
+  Japanese. Kokoro has Japanese voices (jf_*) and misaki has a Japanese G2P; this
+  needs script detection per sentence and a Japanese voice, so it rides on the
+  per-sentence split.
+- **A preset built from real use.** Luke's user runs Heart, speed 0.70 to 0.80,
+  pitch +7 to +9, likeness 1.0, loudness 0.5, consonant protection slider at 0.50.
+  Build a named preset around that and improve it by ear.
+- **Consonant protection slider runs backwards.** 0.50 means protection off, but the
+  user set it to "max" expecting the most protection. Flip the slider so right means
+  more protection (display only; saved values keep their sound).
+- **Short words.** A lone "no" can come out as "sendeno". Candidate fixes are on the
+  0.7.0 ear-check page (cut the quiet lead-in before RVC, or protection on).
 - **Boost tuning.** Boost (0.7.0) has one fixed chain in `engine/effects.py`; add an
   intensity slider if Luke wants it, and a `/say boost:true` option for Discord.
 
