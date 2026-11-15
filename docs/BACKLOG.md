@@ -37,9 +37,6 @@ message into sentences, so they get one spec (EGM) before code.
 - **A preset built from real use.** Luke's user runs Heart, speed 0.70 to 0.80,
   pitch +7 to +9, likeness 1.0, loudness 0.5, consonant protection slider at 0.50.
   Build a named preset around that and improve it by ear.
-- **Consonant protection slider runs backwards.** 0.50 means protection off, but the
-  user set it to "max" expecting the most protection. Flip the slider so right means
-  more protection (display only; saved values keep their sound).
 - **Short words.** A lone "no" can come out as "sendeno". Candidate fixes are on the
   0.7.0 ear-check page (cut the quiet lead-in before RVC, or protection on).
 - **Boost tuning.** Boost (0.7.0) has one fixed chain in `engine/effects.py`; add an

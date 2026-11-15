@@ -12,8 +12,12 @@
 - Updates install only the packages that are missing instead of reinstalling every
   requirement, which could fail while the app was running. Missing packages are also
   installed at startup, so an update that failed halfway repairs itself.
-- Laughs: "haha" now stresses the first "ha", and "hihi" is "hee hee" instead of
-  ending in "high". Lines without a laugh are spoken exactly as before.
+- Laughs: "haha" is "ha ha" and "hihi" is "hee hee", each beat stressed like an
+  English laugh (before, "haha" stressed the wrong "ha" and "hihi" ended in "high").
+  Lines without a laugh are spoken exactly as before.
+- Consonant protection slider now reads the right way round: further right protects
+  more, shown as a percent (0.50 used to mean "off" at the far right). Saved settings
+  keep their sound; a slider that was at the far right now shows 0% at the far left.
 - Yellow notices where Windows administrator rights matter: installing VB-Cable, and
   the hotkey, which cannot reach apps running as administrator.
 
