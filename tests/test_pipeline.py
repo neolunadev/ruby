@@ -146,3 +146,17 @@ class TestKokoroPhonemes:
         assert phonemes == "Im tˈIəɹd"
         assert all(p in tokenizer.vocab for p in phonemes)
 
+
+
+class TestShortLines:
+    def test_lone_words_use_kokoros_own_phonemizer(self):
+        for line in ("no", "haha", "hihi", "hee hee", "yeah", "cats"):
+            assert pipeline.use_kokoro_phonemizer(line) is True
+
+    def test_contractions_keep_the_misaki_mapping(self):
+        assert pipeline.use_kokoro_phonemizer("I'm") is False
+        assert pipeline.use_kokoro_phonemizer("I’m here") is False
+
+    def test_sentences_keep_the_misaki_mapping(self):
+        assert pipeline.use_kokoro_phonemizer("I think you like me") is False
+        assert pipeline.use_kokoro_phonemizer("no way at all") is False
