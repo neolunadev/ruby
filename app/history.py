@@ -10,13 +10,16 @@ class History:
         self._entries: deque = deque(maxlen=cap)
         self._next_id = 1
 
-    def add(self, text: str, wav_path, latency_ms: dict, origin: str = "app") -> dict:
+    def add(
+        self, text: str, wav_path, latency_ms: dict, origin: str = "app", boosted: bool = False
+    ) -> dict:
         entry = {
             "id": self._next_id,
             "text": text,
             "wav": str(wav_path),
             "latency_ms": latency_ms,
             "origin": origin,
+            "boosted": boosted,
             "ts": time.time(),
         }
         self._next_id += 1

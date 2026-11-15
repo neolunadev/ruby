@@ -8,6 +8,7 @@
   --pink: #e12885;
   --text: #d9e6e4;
   --muted: #74898c;
+  --amber: #f2c14e;
   --mono: "Cascadia Code", Consolas, monospace;
 }
 
@@ -88,6 +89,28 @@ button:hover { background: var(--teal); color: #08211f; }
 button:focus-visible { outline: 2px solid var(--teal); outline-offset: 2px; }
 button.quiet { background: transparent; border-color: var(--line); color: var(--muted); }
 button.quiet:hover { border-color: var(--teal); color: var(--text); }
+
+/* one-shot boost toggle: grey until armed, then hot pink */
+button.boost { background: transparent; border-color: var(--line); color: var(--muted); }
+button.boost:hover { border-color: var(--pink); color: var(--text); background: transparent; }
+button.boost.armed {
+  background: var(--pink);
+  border-color: var(--pink);
+  color: #fff;
+  animation: boost-pulse 0.8s ease-in-out infinite;
+}
+@keyframes boost-pulse { 50% { box-shadow: 0 0 12px var(--pink); } }
+
+/* needs-administrator notice */
+.admin-warn {
+  color: var(--amber);
+  border: 1px solid rgba(242, 193, 78, 0.45);
+  background: rgba(242, 193, 78, 0.08);
+  border-radius: 6px;
+  padding: 6px 10px;
+  font-size: 12px;
+  margin-top: 6px;
+}
 
 /* ---------- voice line (speaking indicator) ---------- */
 .voiceline {

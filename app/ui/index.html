@@ -19,6 +19,7 @@
 
 <div class="saybox">
   <input id="say-input" placeholder="Say something…" autofocus>
+  <button class="boost" id="boost-btn" aria-pressed="false" title="Boost the next line: loud, clipped, bass-boosted, huge echo. Ctrl+Enter also boosts.">💥 Boost</button>
   <button id="say-btn">Speak</button>
 </div>
 <div class="voiceline" id="voiceline">
@@ -145,6 +146,7 @@
       <input type="text" id="hotkey" readonly>
       <button class="quiet" id="hotkey-record">Record</button>
     </div>
+    <div class="admin-warn">⚠ The hotkey can't reach games or apps running as administrator. For those, run this app as administrator too.</div>
   </div>
 
   <div class="field">

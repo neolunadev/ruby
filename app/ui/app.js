@@ -40,7 +40,7 @@ window.onEvent = (evt) => {
     if (evt.status === "available" && !$("chip-version").classList.contains("update-available")) {
       $("chip-version").classList.add("update-available");
       $("chip-version").textContent += " ⬆";
-      toast(`Update available (${evt.behind} change${evt.behind > 1 ? "s" : ""}) — click the version chip to install.`);
+      toast(`Update available (${evt.latest}) — click the version chip to install.`);
     } else if (evt.status === "updating") toast("Updating — this can take a minute…");
     else if (evt.status === "restarting") toast("Updated. Restarting…");
     else if (evt.status === "failed") toast(`Update failed: ${evt.error || "unknown error"}`);
@@ -79,6 +79,15 @@ function renderDiscord(d) {
     links.append(open, " · ", a, " · ", b);
   }
 }
+
+// Yellow notice for anything that needs Windows administrator rights.
+function adminWarn(text) {
+  const d = document.createElement("div");
+  d.className = "admin-warn";
+  d.textContent = "⚠ " + text;
+  return d;
+}
+const CABLE_ADMIN = "Needs administrator: Windows asks for permission once to install the VB-Cable driver.";
 
 function cableStatus(evt) {
   const hint = $("cable-hint");
@@ -126,11 +135,27 @@ function toast(msg) {
 }
 
 // ---------- say ----------
-async function say() {
+// Boost is one-shot: arming it boosts the next line spoken (typed or a quick
+// phrase), then it disarms so a meme never sticks.
+let boostArmed = false;
+
+function setBoost(on) {
+  boostArmed = on;
+  $("boost-btn").classList.toggle("armed", on);
+  $("boost-btn").setAttribute("aria-pressed", String(on));
+}
+
+function takeBoost(force) {
+  const boost = force || boostArmed;
+  setBoost(false);
+  return boost;
+}
+
+async function say(force) {
   const input = $("say-input");
   const text = input.value.trim();
   if (!text) return;
-  const res = await pywebview.api.say(text);
+  const res = await pywebview.api.say(text, takeBoost(force === true));
   if (res.ok) input.value = "";
   else toast(res.error);
 }
@@ -156,7 +181,7 @@ function renderPhrases(phrases) {
     const btn = document.createElement("button");
     btn.textContent = phrase;
     btn.onclick = async () => {
-      const res = await pywebview.api.say(phrase);
+      const res = await pywebview.api.say(phrase, takeBoost(false));
       if (!res.ok) toast(res.error);
     };
     box.append(btn);
@@ -171,7 +196,7 @@ function renderHistory(items) {
     const li = document.createElement("li");
     const text = document.createElement("div");
     text.className = "htext";
-    text.textContent = e.text;
+    text.textContent = (e.boosted ? "💥 " : "") + e.text;
     text.title = e.text;
     const lat = document.createElement("div");
     lat.className = "hlat";
@@ -219,7 +244,7 @@ function renderCableHint(dev, currentDevice) {
       hint.textContent = "Starting download…";
       pywebview.api.install_cable();
     };
-    hint.append(btn, " (free driver, one Windows admin prompt)");
+    hint.append(btn, " (free driver)", adminWarn(CABLE_ADMIN));
   } else if (currentDevice !== dev.cable) {
     const btn = document.createElement("button");
     btn.textContent = "🎤 Use virtual mic";
@@ -412,7 +437,7 @@ async function maybeShowWizard() {
       cableHint.textContent = "Starting download...";
       pywebview.api.install_cable();
     };
-    cableHint.append(b);
+    cableHint.append(b, adminWarn(CABLE_ADMIN));
   } else {
     cableHint.textContent = "Installed - pick CABLE Output as your microphone in Discord.";
   }
@@ -448,13 +473,16 @@ $("chip-version").onclick = async () => {
   const res = await pywebview.api.check_update();
   if (!res.ok) return toast(res.error);
   if (res.behind === 0) return toast(`Up to date (v${res.version}).`);
-  if (confirm(`Update available (${res.behind} new change${res.behind > 1 ? "s" : ""}). Update and restart now?`)) {
+  if (confirm(`Release ${res.latest} is out. Update and restart now?`)) {
     pywebview.api.apply_update();
   }
 };
 
-$("say-btn").onclick = say;
-$("say-input").addEventListener("keydown", (e) => { if (e.key === "Enter") say(); });
+$("say-btn").onclick = () => say(false);
+$("boost-btn").onclick = () => setBoost(!boostArmed);
+$("say-input").addEventListener("keydown", (e) => {
+  if (e.key === "Enter") say(e.ctrlKey);
+});
 
 $("device").onchange = (e) => setSetting("device", e.target.value === "" ? null : Number(e.target.value));
 $("monitor").onchange = (e) => setSetting("monitor_device", e.target.value === "" ? null : Number(e.target.value));

@@ -293,9 +293,14 @@ def main() -> None:
         try:
             from app import updater
 
+            # Heals an update whose dependency step failed (e.g. boost's pedalboard).
+            try:
+                updater.install_missing()
+            except Exception:
+                log.exception("installing missing requirements failed")
             info = updater.check()
             if info["behind"] > 0:
-                api.push({"type": "update", "status": "available", "behind": info["behind"]})
+                api.push({"type": "update", "status": "available", "latest": info["latest"]})
         except Exception:
             log.debug("startup update check failed", exc_info=True)
 

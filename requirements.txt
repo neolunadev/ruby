@@ -30,6 +30,7 @@ scipy                   # high-pass filter in engine/rvc/infer/pipeline.py
 faiss-cpu               # speaker-index retrieval in engine/rvc/infer/pipeline.py
 transformers==4.57.3    # HubertModel for the contentvec embedder (pin: known-good with our weights)
 requests                # app/updater.py
+pedalboard              # boost mode effects (engine/effects.py)
 pywebview
 keyboard
 pystray

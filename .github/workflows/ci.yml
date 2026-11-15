@@ -16,6 +16,9 @@ jobs:
     with:
       markdownlint: false
       allow-data: false
+      # Public repo: GitHub-hosted minutes are free, and the org's self-hosted
+      # runners refuse public repos (see house.yml).
+      runner: '"ubuntu-latest"'
 
   test:
     runs-on: windows-latest
@@ -27,7 +30,7 @@ jobs:
       # Unit tests are hardware-free by design: audio and GPU layers are
       # monkeypatched, heavy deps import lazily. No torch/models needed here.
       - name: Install test dependencies
-        run: pip install pytest numpy soundfile
+        run: pip install pytest numpy soundfile pedalboard
       - name: Lint (undefined names, unused imports)
         run: |
           pip install ruff

@@ -31,7 +31,7 @@
 </head>
 <body>
 <div class="dot"></div>
-<input id="overlay-input" placeholder="Say something…" autofocus>
+<input id="overlay-input" placeholder="Say something…  (Ctrl+Enter = 💥 boost)" autofocus>
 <script>
   "use strict";
   const input = document.getElementById("overlay-input");
@@ -47,7 +47,8 @@
     if (e.key === "Enter") {
       const text = input.value.trim();
       if (!text) return;
-      const res = await pywebview.api.say(text);
+      // Ctrl+Enter speaks the line boosted (loud, clipped, echo).
+      const res = await pywebview.api.say(text, e.ctrlKey);
       if (res.ok) {
         input.value = "";
         pywebview.api.hide_overlay();

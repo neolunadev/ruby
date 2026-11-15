@@ -71,14 +71,21 @@ class JsApi:
         pass
 
     # ---- called from JS ------------------------------------------------
-    async def _speak_job(self, text: str, origin: str = "app") -> None:
+    async def _speak_job(self, text: str, origin: str = "app", boost: bool = False) -> None:
         """Synthesize and route to the active sink. Runs on the engine loop;
-        also the entry point for Discord-originated speech."""
+        also the entry point for Discord-originated speech. boost runs the
+        finished line through the meme effect chain (engine/effects.py)."""
         err = pipeline.validate_text(text)
         if err:
             raise ValueError(err)
         wav = await pipeline.synthesize(text)
-        entry = self.history.add(text, wav, dict(pipeline.LAST_TIMING), origin=origin)
+        if boost:
+            from engine import effects
+
+            await asyncio.to_thread(effects.boost_file, wav, wav)
+        entry = self.history.add(
+            text, wav, dict(pipeline.LAST_TIMING), origin=origin, boosted=boost
+        )
         routed_to_voice = False
         if self._cfg["mode"] == "bot" and self.discord_client is not None:
             routed_to_voice = await self.discord_client.play_voice(wav)
@@ -87,7 +94,7 @@ class JsApi:
         self.push({"type": "speaking", "entry": entry})
         self.push({"type": "history", "items": self.history.items()})
 
-    def say(self, text: str) -> dict:
+    def say(self, text: str, boost: bool = False) -> dict:
         err = pipeline.validate_text(text)
         if err:
             return {"ok": False, "error": err}
@@ -98,7 +105,7 @@ class JsApi:
                 log.error("say failed", exc_info=exc)
                 self.set_state("error", str(exc))
 
-        self._loop.submit(self._speak_job(text)).add_done_callback(done)
+        self._loop.submit(self._speak_job(text, boost=bool(boost))).add_done_callback(done)
         return {"ok": True}
 
     def set_discord_status(self, status: str) -> None:

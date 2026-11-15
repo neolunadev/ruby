@@ -1,5 +1,22 @@
 # Changelog
 
+## 0.7.0 - 2026-11-15
+
+- Boost mode: the 💥 Boost button beside Speak boosts the next line only (a touch
+  lower, bass boosted, crunchy like a clipping mic without really clipping, big echo
+  and reverb), then switches itself off. Ctrl+Enter
+  speaks a line boosted, in the main box and the overlay. Boosted lines show 💥 in
+  History and replay boosted.
+- Updates now come only from full GitHub releases (never the main branch or a
+  pre-release), and never offer an older version.
+- Updates install only the packages that are missing instead of reinstalling every
+  requirement, which could fail while the app was running. Missing packages are also
+  installed at startup, so an update that failed halfway repairs itself.
+- Laughs: "haha" now stresses the first "ha", and "hihi" is "hee hee" instead of
+  ending in "high". Lines without a laugh are spoken exactly as before.
+- Yellow notices where Windows administrator rights matter: installing VB-Cable, and
+  the hotkey, which cannot reach apps running as administrator.
+
 ## 0.6.0 - 2026-11-03
 
 - Voice options: pick any of Kokoro's 29 female voices (grouped by accent), blend two

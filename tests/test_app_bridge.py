@@ -95,3 +95,47 @@ class TestVoiceSettings:
         assert api.preview() == {"ok": True}
         assert api.preview()["ok"] is False
         assert len(api._loop.submitted) == 1
+
+
+class TestBoost:
+    def test_boost_runs_effect_chain_and_marks_history(self, api, monkeypatch, tmp_path):
+        import asyncio
+
+        from engine import effects
+
+        wav = tmp_path / "miku_x.wav"
+        wav.write_bytes(b"")
+        boosted = []
+
+        async def fake_synth(text):
+            return wav
+
+        async def fake_enqueue(path):
+            pass
+
+        monkeypatch.setattr(pipeline, "synthesize", fake_synth)
+        monkeypatch.setattr(effects, "boost_file", lambda src, dst: boosted.append((src, dst)))
+        api._player.enqueue = fake_enqueue
+        asyncio.run(api._speak_job("yeah", boost=True))
+        assert boosted == [(wav, wav)]
+        assert api.history.items()[0]["boosted"] is True
+
+    def test_plain_say_skips_effects(self, api, monkeypatch, tmp_path):
+        import asyncio
+
+        from engine import effects
+
+        wav = tmp_path / "miku_y.wav"
+        wav.write_bytes(b"")
+
+        async def fake_synth(text):
+            return wav
+
+        async def fake_enqueue(path):
+            pass
+
+        monkeypatch.setattr(pipeline, "synthesize", fake_synth)
+        monkeypatch.setattr(effects, "boost_file", lambda *a: pytest.fail("boosted"))
+        api._player.enqueue = fake_enqueue
+        asyncio.run(api._speak_job("yeah"))
+        assert api.history.items()[0]["boosted"] is False
