@@ -27,7 +27,7 @@ jobs:
       # Unit tests are hardware-free by design: audio and GPU layers are
       # monkeypatched, heavy deps import lazily. No torch/models needed here.
       - name: Install test dependencies
-        run: pip install pytest numpy soundfile
+        run: pip install pytest numpy soundfile pedalboard
       - name: Lint (undefined names, unused imports)
         run: |
           pip install ruff

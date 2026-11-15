@@ -2,6 +2,37 @@
 
 Ideas and follow-ups that are not scheduled yet. Newest section first.
 
+## Text and delivery (asked 2026-11-15, after boost mode shipped)
+
+Luke's asks from the 0.7.0 session. The first four share one foundation, splitting a
+message into sentences, so they get one spec (EGM) before code.
+
+- **Per-sentence rendering with early start.** Split long messages into sentences,
+  synthesize them one at a time, and start speaking once enough is rendered that the
+  rest will be ready before playback reaches it (Luke: "start at about 80%"; the real
+  rule is "remaining render time < remaining audio time"). Then the 500-character cap
+  can rise to Discord's 2000.
+- **Punctuation effects, per sentence.** A sentence ending in `~`, `!` or `?` gets its
+  own delivery effect (for example `~` sing-song lilt, `!` louder and brighter, `?`
+  rising pitch). Commas and full stops should give real pauses. Exact effects are a
+  Desk pick.
+- **Drawn-out syllables.** "i think you liiiiike meeeee" should hold the vowel, not
+  spell or skip it. Likely route: collapse the run to the dictionary word, phonemize,
+  then repeat or stretch the stressed vowel.
+- **Laughs and interjections.** 0.7.0 fixes the phonemes ("haha" stressed on the
+  wrong "ha", "hihi" ending in "high"). If laughs still sound flat by ear, try
+  breathier phonemes or short recorded-style takes. Must not change how "yeah"
+  sounds now (Luke likes it).
+- **Misspellings and jokes.** "cummunity" comes out like "community": espeak does
+  give it a different first vowel (kʌm, not kəm), but the syllable is unstressed so
+  the difference blurs. Options: a user pronunciation list in Settings ("write it as /
+  say it as"), or stressing a word whose spelling differs from the dictionary word.
+- **Sing mode.** RVC already has `f0_autotune` (see the Autotune toggle below);
+  singing needs a melody: snap to a scale for an autotune feel, or take a simple
+  note line. Needs a design pass.
+- **Boost tuning.** Boost (0.7.0) has one fixed chain in `engine/effects.py`; add an
+  intensity slider if Luke wants it, and a `/say boost:true` option for Discord.
+
 ## Voice options (left out of v0.6.0)
 
 From `docs/designs/voice-options.md`.

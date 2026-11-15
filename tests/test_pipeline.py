@@ -145,3 +145,37 @@ class TestKokoroPhonemes:
         phonemes = pipeline.espeak_to_kokoro(pipeline._espeak("I'm tired"))
         assert phonemes == "Im tˈIəɹd"
         assert all(p in tokenizer.vocab for p in phonemes)
+
+
+class TestLaughs:
+    @staticmethod
+    def fake_espeak(text):
+        # Digits and brackets pass through espeak_to_kokoro unchanged.
+        return f"<{len(text.strip())}>"
+
+    def test_plain_line_takes_single_espeak_path(self):
+        calls = []
+
+        def spy(text):
+            calls.append(text)
+            return "jˈɛh"
+
+        assert pipeline.text_to_phonemes("yeah", espeak=spy) == "jˈɛh"
+        assert calls == ["yeah"]
+
+    def test_haha_stresses_first_syllable(self):
+        assert pipeline.laugh_phonemes("haha") == "hˈɑhɑ"
+        assert pipeline.laugh_phonemes("HAHAHA") == "hˈɑhɑhɑ"
+
+    def test_hihi_is_hee_hee_not_high(self):
+        assert pipeline.laugh_phonemes("hihi") == "hˈihi"
+
+    def test_hi_alone_is_still_a_greeting(self):
+        assert pipeline.text_to_phonemes("hi there", espeak=self.fake_espeak) == "<8>"
+
+    def test_laugh_inside_a_sentence(self):
+        out = pipeline.text_to_phonemes("ok haha, sure", espeak=self.fake_espeak)
+        assert out == "<2> hˈɑhɑ <6>"
+
+    def test_words_containing_ha_are_untouched(self):
+        assert pipeline.text_to_phonemes("that hat", espeak=self.fake_espeak) == "<8>"
