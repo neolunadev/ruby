@@ -108,26 +108,35 @@ def apply() -> None:
     install_missing()
 
 
-def requirement_names(text: str) -> list[str]:
-    """Distribution names from requirements.txt text (no extras, pins or comments)."""
-    names = []
+def requirement_specs(text: str) -> list[tuple[str, str]]:
+    """(distribution name, full specifier) per requirements.txt line.
+
+    The specifier keeps pins, extras and markers ("torch==2.7.1",
+    "discord.py[voice]") so a missing package installs at its pinned version.
+    """
+    specs = []
     for line in text.splitlines():
         line = line.split("#", 1)[0].strip()
         if not line or line.startswith("-"):
             continue
         m = re.match(r"[A-Za-z0-9][A-Za-z0-9._-]*", line)
         if m:
-            names.append(m.group(0))
-    return names
+            specs.append((m.group(0), line))
+    return specs
+
+
+def requirement_names(text: str) -> list[str]:
+    return [name for name, _ in requirement_specs(text)]
 
 
 def missing_requirements(text: str) -> list[str]:
+    """Full specifiers of the requirements that are not installed."""
     missing = []
-    for name in requirement_names(text):
+    for name, spec in requirement_specs(text):
         try:
             importlib.metadata.version(name)
         except importlib.metadata.PackageNotFoundError:
-            missing.append(name)
+            missing.append(spec)
     return missing
 
 
@@ -142,7 +151,7 @@ def install_missing() -> list[str]:
         text = REQUIREMENTS.read_text(encoding="utf-8")
     except OSError:
         return []
-    missing = [n for n in missing_requirements(text) if n.lower() != "pytest"]
+    missing = [s for s in missing_requirements(text) if not s.lower().startswith("pytest")]
     if missing:
         log.info("installing missing requirements: %s", missing)
         subprocess.run(
